@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* make the canvas lines and buttons match our black and white style */
+.react-flow__edge-path {
+  stroke: #a3a3a3;
+}
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #171717;
+}
+.react-flow__controls {
+  display: none;
+}
+.react-flow__attribution {
+  display: none;
+}
+
+/* subtle handle glow on hover */
+.react-flow__handle:hover {
+  border-color: #71717a !important;
+  box-shadow: 0 0 0 2px rgba(113, 113, 122, 0.15);
+}
+
+/* keep connection handles visible, do not clip them */
+.react-flow__node {
+  overflow: visible !important;
+}
+.react-flow__node > div {
+  overflow: visible !important;
+}
