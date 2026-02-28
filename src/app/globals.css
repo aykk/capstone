@@ -42,10 +42,18 @@ body {
   box-shadow: 0 0 0 2px rgba(113, 113, 122, 0.15);
 }
 
+/* ensure handles receive pointer events so connections work (React Flow defaults to none) */
+.react-flow__handle {
+  pointer-events: all !important;
+  z-index: 10;
+}
+
+/* keep resize controls behind connection handles when node is selected */
+.react-flow__resize-control {
+  z-index: 1;
+}
+
 /* keep connection handles visible, do not clip them */
 .react-flow__node {
-  overflow: visible !important;
-}
-.react-flow__node > div {
   overflow: visible !important;
 }

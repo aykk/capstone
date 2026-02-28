@@ -33,7 +33,7 @@ function TextNodeComponent({ id, data, selected }: NodeProps<TextNodeData>) {
       `}
     >
       <NodeResizer minWidth={180} minHeight={120} isVisible={selected} color="#a1a1aa" lineStyle={{ borderWidth: 1 }} handleStyle={{ width: 6, height: 6, borderRadius: 2 }} />
-      <Handle type="target" position={Position.Left} className="!-left-[5px] !h-2.5 !w-2.5 !rounded-full !border-2 !border-zinc-300 !bg-white" />
+      <Handle type="target" position={Position.Left} className="!-left-[5px] !h-3 !w-3 !rounded-full !border-2 !border-zinc-300 !bg-white" />
 
       <div className="shrink-0 px-3 py-2.5">
         <div className="truncate text-[13px] font-medium text-zinc-900">{label}</div>
@@ -49,7 +49,7 @@ function TextNodeComponent({ id, data, selected }: NodeProps<TextNodeData>) {
         />
       </div>
 
-      <Handle type="source" position={Position.Right} className="!-right-[5px] !h-2.5 !w-2.5 !rounded-full !border-2 !border-zinc-300 !bg-white" />
+      <Handle type="source" position={Position.Right} className="!-right-[5px] !h-3 !w-3 !rounded-full !border-2 !border-zinc-300 !bg-white" />
     </div>
   );
 }
