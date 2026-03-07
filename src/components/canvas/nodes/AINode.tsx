@@ -2,7 +2,7 @@
 
 import { memo, useCallback } from "react";
 import { Handle, Position, NodeResizer, type NodeProps, useReactFlow } from "reactflow";
-import { mockGeminiGenerate } from "@/lib/mockApi";
+import { geminiGenerate } from "@/lib/gemini";
 
 export interface AINodeData {
   label: string;
@@ -47,7 +47,7 @@ function AINodeComponent({ id, data, selected }: NodeProps<AINodeData>) {
 
     updateData({ isGenerating: true });
     try {
-      const response = await mockGeminiGenerate(prompt, ingestContent);
+      const response = await geminiGenerate(prompt, ingestContent);
       setNodes((nodes) =>
         nodes.map((node) =>
           node.id === id ? { ...node, data: { ...node.data, output: response, isGenerating: false } } : node
