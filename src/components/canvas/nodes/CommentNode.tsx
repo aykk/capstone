@@ -10,7 +10,6 @@ export interface CommentNodeData {
 
 function CommentNodeComponent({ id, data, selected }: NodeProps<CommentNodeData>) {
   const { setNodes } = useReactFlow();
-  const label = data.label ?? "Comment";
   const content = data.content ?? "";
 
   const updateData = useCallback(
@@ -29,27 +28,28 @@ function CommentNodeComponent({ id, data, selected }: NodeProps<CommentNodeData>
       className={`
         group relative flex h-full min-h-0 w-full flex-col rounded-lg border bg-white
         transition-all duration-150 hover:shadow-md
-        ${selected ? "border-zinc-900 shadow-md" : "border-zinc-200 shadow-sm"}
+        ${selected ? "border-yellow-500 shadow-md" : "border-zinc-200 shadow-sm"}
       `}
     >
-      <NodeResizer minWidth={180} minHeight={120} isVisible={selected} color="#a1a1aa" lineStyle={{ borderWidth: 1 }} handleStyle={{ width: 6, height: 6, borderRadius: 2 }} />
-      <Handle type="target" position={Position.Left} className="!-left-[5px] !h-2.5 !w-2.5 !rounded-full !border-2 !border-zinc-300 !bg-white" />
+      <div className="absolute left-0 top-0 h-full w-1 rounded-l-lg bg-yellow-400" />
+      <NodeResizer minWidth={180} minHeight={120} isVisible={selected} color="#eab308" lineStyle={{ borderWidth: 1 }} handleStyle={{ width: 6, height: 6, borderRadius: 2 }} />
+      <Handle type="target" position={Position.Left} className="!-left-[5px] !h-2.5 !w-2.5 !rounded-full !border-2 !border-yellow-300 !bg-white" />
 
-      <div className="shrink-0 px-3 py-2.5">
-        <div className="truncate text-[13px] font-medium text-zinc-900">{label}</div>
-        <div className="truncate text-[11px] text-zinc-400">{content ? content.slice(0, 30) : "No comments"}</div>
+      <div className="shrink-0 pl-4 pr-3 py-2.5">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-yellow-600">💬 Comment</div>
+        <div className="truncate text-[11px] text-zinc-400 mt-0.5">{content ? content.slice(0, 45) : "Add a comment or clarification..."}</div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto border-t border-zinc-100 px-3 py-2">
+      <div className="min-h-0 flex-1 overflow-auto border-t border-zinc-100 pl-4 pr-3 py-2">
         <textarea
           value={content}
           onChange={(e) => updateData({ content: e.target.value })}
-          placeholder="Add a comment..."
-          className="h-full min-h-[80px] w-full resize-none rounded border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs text-zinc-700 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none"
+          placeholder="Add a comment or clarification on an idea..."
+          className="h-full min-h-[60px] w-full resize-none rounded border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs text-zinc-700 placeholder:text-zinc-400 focus:border-yellow-400 focus:outline-none"
         />
       </div>
 
-      <Handle type="source" position={Position.Right} className="!-right-[5px] !h-2.5 !w-2.5 !rounded-full !border-2 !border-zinc-300 !bg-white" />
+      <Handle type="source" position={Position.Right} className="!-right-[5px] !h-2.5 !w-2.5 !rounded-full !border-2 !border-yellow-300 !bg-white" />
     </div>
   );
 }

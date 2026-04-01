@@ -17,57 +17,52 @@ import {
   type Edge,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { TextNode } from "./nodes/TextNode";
-import { ImageNode } from "./nodes/ImageNode";
-import { AINode } from "./nodes/AINode";
-import { LogicNode } from "./nodes/LogicNode";
-import { ConnectorNode } from "./nodes/ConnectorNode";
-import { NoteNode } from "./nodes/NoteNode";
+import { IdeaNode } from "./nodes/IdeaNode";
 import { CommentNode } from "./nodes/CommentNode";
+import { ActionItemNode } from "./nodes/ActionItemNode";
+import { AINode } from "./nodes/AINode";
+import { ConnectorNode } from "./nodes/ConnectorNode";
+import { GroupNode } from "./nodes/GroupNode";
 import { StatusBar } from "./StatusBar";
+import { Navbar, type SavedSession } from "./Navbar";
+import { Sidebar } from "./Sidebar";
 
-const STORAGE_KEY = "flowstate-canvas-v3";
+const AUTO_SAVE_KEY = "meetingflow-canvas-autosave";
+const SAVES_KEY = "meetingflow-saves";
 
 const nodeTypes = {
-  textNode: TextNode,
-  imageNode: ImageNode,
-  aiNode: AINode,
-  logicNode: LogicNode,
-  connectorNode: ConnectorNode,
-  noteNode: NoteNode,
+  ideaNode: IdeaNode,
   commentNode: CommentNode,
+  actionItemNode: ActionItemNode,
+  aiNode: AINode,
+  connectorNode: ConnectorNode,
+  groupNode: GroupNode,
 };
 
-// default data for each node type when dropped onto the canvas
 const defaultNodeData: Record<string, Record<string, unknown>> = {
-  textNode: { label: "Text Node", content: "" },
-  imageNode: { label: "Image Node", src: "" },
-  aiNode: { label: "AI Node", prompt: "", output: "", isGenerating: false },
-  logicNode: { label: "Logic Node", option: "once" },
-  connectorNode: {},
-  noteNode: { label: "Note", content: "" },
+  ideaNode: { label: "Idea", content: "" },
   commentNode: { label: "Comment", content: "" },
+  actionItemNode: { label: "Action Item", content: "", assignee: "" },
+  aiNode: { label: "Ask Gemini", prompt: "", output: "", isGenerating: false },
+  groupNode: { label: "Group", },
 };
 
 const defaultNodeSize: Record<string, { width: number; height: number }> = {
-  textNode: { width: 220, height: 180 },
-  imageNode: { width: 220, height: 200 },
+  ideaNode: { width: 220, height: 180 },
+  commentNode: { width: 220, height: 160 },
+  actionItemNode: { width: 220, height: 200 },
   aiNode: { width: 240, height: 240 },
-  logicNode: { width: 180, height: 100 },
-  connectorNode: { width: 32, height: 32 },
-  noteNode: { width: 220, height: 180 },
-  commentNode: { width: 220, height: 180 },
+  groupNode: { width: 300, height: 200 },
 };
 
-// read saved nodes and edges from the browser so layout survives refresh
 function loadFromStorage(): { nodes: Node[]; edges: Edge[] } {
   if (typeof window === "undefined") return { nodes: [], edges: [] };
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(AUTO_SAVE_KEY);
     if (stored) {
       const { nodes, edges } = JSON.parse(stored);
       const sanitizedNodes = (nodes ?? []).map((n: Node) => {
-        const size = defaultNodeSize[n.type ?? "textNode"] ?? { width: 180, height: 55 };
+        const size = defaultNodeSize[n.type ?? "ideaNode"] ?? { width: 220, height: 180 };
         const style = n.style && typeof n.style === "object" ? n.style : {};
         const hasSize = "width" in style || "height" in style;
         return {
@@ -78,30 +73,23 @@ function loadFromStorage(): { nodes: Node[]; edges: Edge[] } {
       });
       return { nodes: sanitizedNodes, edges: edges ?? [] };
     }
-  } catch {
-    // ignore parse errors
-  }
+  } catch { /* ignore */ }
   return { nodes: [], edges: [] };
 }
 
-// write nodes and edges to the browser so they persist
-function saveToStorage(nodes: Node[], edges: Edge[]) {
+function saveAutoSave(nodes: Node[], edges: Edge[]) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ nodes, edges }));
-  } catch {
-    // ignore
-  }
+    localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify({ nodes, edges }));
+  } catch { /* ignore */ }
 }
 
-// make the connecting lines dashed instead of solid
 const defaultEdgeOptions = {
   type: "default",
   animated: false,
   style: { stroke: "#a1a1aa", strokeWidth: 1.5, strokeDasharray: "6 3" },
 };
 
-// keeps a copy of the canvas so you can undo and redo changes
 type Snapshot = { nodes: Node[]; edges: Edge[] };
 
 export interface FlowCanvasHandle {
@@ -114,7 +102,7 @@ export interface FlowCanvasHandle {
   zoomLevel: number;
 }
 
-function FlowCanvasInner({ onStateChange }: { onStateChange: (handle: FlowCanvasHandle) => void }) {
+function FlowCanvasInner() {
   const flowInstanceRef = useRef<ReactFlowInstance | null>(null);
   const { nodes: initialNodes, edges: initialEdges } = loadFromStorage();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -122,7 +110,15 @@ function FlowCanvasInner({ onStateChange }: { onStateChange: (handle: FlowCanvas
   const { zoomIn, zoomOut } = useReactFlow();
   const { zoom } = useViewport();
 
-  // stores past and future states for undo and redo
+  const [projectName, setProjectName] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("meetingflow-project-name") ?? "Untitled Meeting";
+    }
+    return "Untitled Meeting";
+  });
+  const [saveStatus, setSaveStatus] = useState<"unsaved" | "saved">("unsaved");
+  const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const undoStack = useRef<Snapshot[]>([]);
   const redoStack = useRef<Snapshot[]>([]);
   const [canUndo, setCanUndo] = useState(false);
@@ -138,7 +134,6 @@ function FlowCanvasInner({ onStateChange }: { onStateChange: (handle: FlowCanvas
     setCanRedo(false);
   }, [nodes, edges]);
 
-  // waits a moment before saving so dragging doesn't create too many steps
   const snapshotTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debouncedPushSnapshot = useCallback(() => {
     if (snapshotTimer.current) clearTimeout(snapshotTimer.current);
@@ -169,18 +164,75 @@ function FlowCanvasInner({ onStateChange }: { onStateChange: (handle: FlowCanvas
     setTimeout(() => { isUndoRedo.current = false; }, 50);
   }, [nodes, edges, setNodes, setEdges]);
 
-  // sends zoom and undo/redo controls up to the navbar
-  useEffect(() => {
-    onStateChange({
-      zoomIn: () => zoomIn(),
-      zoomOut: () => zoomOut(),
-      undo: handleUndo,
-      redo: handleRedo,
-      canUndo,
-      canRedo,
-      zoomLevel: zoom,
-    });
-  }, [zoom, canUndo, canRedo, zoomIn, zoomOut, handleUndo, handleRedo, onStateChange]);
+  const handleNew = useCallback(() => {
+    pushSnapshot();
+    setNodes([]);
+    setEdges([]);
+    const newName = "Untitled Meeting";
+    setProjectName(newName);
+    localStorage.setItem("meetingflow-project-name", newName);
+    localStorage.removeItem(AUTO_SAVE_KEY);
+    setSaveStatus("unsaved");
+  }, [pushSnapshot, setNodes, setEdges]);
+
+  const handleProjectNameChange = useCallback((name: string) => {
+    setProjectName(name);
+    localStorage.setItem("meetingflow-project-name", name);
+    setSaveStatus("unsaved");
+  }, []);
+
+  // named save — appends or updates a session in the saves list
+  const handleSave = useCallback((name: string) => {
+    try {
+      const existing: SavedSession[] = JSON.parse(localStorage.getItem(SAVES_KEY) ?? "[]");
+      const idx = existing.findIndex((s) => s.name === name);
+      const session: SavedSession = {
+        name,
+        savedAt: new Date().toLocaleString(),
+        canvas: { nodes, edges },
+      };
+      if (idx >= 0) { existing[idx] = session; } else { existing.unshift(session); }
+      localStorage.setItem(SAVES_KEY, JSON.stringify(existing));
+      // show "Saved" then revert to "Unsaved changes" after 3s
+      setSaveStatus("saved");
+      if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
+      saveStatusTimer.current = setTimeout(() => setSaveStatus("unsaved"), 3000);
+    } catch { /* ignore */ }
+  }, [nodes, edges]);
+
+  // load a saved session — also updates the project name
+  const handleLoad = useCallback((session: SavedSession) => {
+    try {
+      const { nodes: savedNodes, edges: savedEdges } = session.canvas as { nodes: Node[]; edges: Edge[] };
+      const sanitized = (savedNodes ?? []).map((n: Node) => {
+        const size = defaultNodeSize[n.type ?? "ideaNode"] ?? { width: 220, height: 180 };
+        const style = n.style && typeof n.style === "object" ? n.style : {};
+        const hasSize = "width" in style || "height" in style;
+        return {
+          ...n,
+          data: { ...n.data, isGenerating: false },
+          style: hasSize ? style : { ...style, ...size },
+        };
+      });
+      pushSnapshot();
+      setNodes(sanitized);
+      setEdges(savedEdges ?? []);
+      // update the project name to match the loaded session
+      setProjectName(session.name);
+      localStorage.setItem("meetingflow-project-name", session.name);
+      setSaveStatus("saved");
+      if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
+      saveStatusTimer.current = setTimeout(() => setSaveStatus("unsaved"), 3000);
+    } catch { /* ignore */ }
+  }, [pushSnapshot, setNodes, setEdges]);
+
+  // delete a named save from localStorage
+  const handleDelete = useCallback((name: string) => {
+    try {
+      const existing: SavedSession[] = JSON.parse(localStorage.getItem(SAVES_KEY) ?? "[]");
+      localStorage.setItem(SAVES_KEY, JSON.stringify(existing.filter((s) => s.name !== name)));
+    } catch { /* ignore */ }
+  }, []);
 
   const onInit = useCallback((instance: ReactFlowInstance) => {
     flowInstanceRef.current = instance;
@@ -194,6 +246,7 @@ function FlowCanvasInner({ onStateChange }: { onStateChange: (handle: FlowCanvas
     [setEdges, debouncedPushSnapshot]
   );
 
+  // group nodes must sit behind all other nodes
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
@@ -202,16 +255,19 @@ function FlowCanvasInner({ onStateChange }: { onStateChange: (handle: FlowCanvas
       const instance = flowInstanceRef.current;
       if (!instance) return;
       const position = instance.screenToFlowPosition({ x: event.clientX, y: event.clientY });
-      const size = defaultNodeSize[type] ?? { width: 180, height: 55 };
+      const size = defaultNodeSize[type] ?? { width: 220, height: 180 };
+      const isGroup = type === "groupNode";
       const newNode: Node = {
         id: `${type}-${Date.now()}`,
         type,
         position,
         style: { width: size.width, height: size.height },
         data: { ...(defaultNodeData[type] ?? {}) },
+        ...(isGroup ? { zIndex: -1 } : {}),
       };
       pushSnapshot();
-      setNodes((nds) => nds.concat(newNode));
+      // groups go to the back of the array so they render behind other nodes
+      setNodes((nds) => isGroup ? [newNode, ...nds] : nds.concat(newNode));
     },
     [setNodes, pushSnapshot]
   );
@@ -221,42 +277,65 @@ function FlowCanvasInner({ onStateChange }: { onStateChange: (handle: FlowCanvas
     event.dataTransfer.dropEffect = "move";
   }, []);
 
-  // save to browser storage whenever the canvas changes
+  // mark unsaved whenever canvas content changes (skip on initial mount)
+  const isFirstRender = useRef(true);
   useEffect(() => {
-    saveToStorage(nodes, edges);
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    setSaveStatus("unsaved");
+    saveAutoSave(nodes, edges);
     debouncedPushSnapshot();
   }, [nodes, edges, debouncedPushSnapshot]);
 
   return (
-    <div className="relative h-full w-full">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onInit={onInit}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        nodeTypes={nodeTypes}
-        defaultEdgeOptions={defaultEdgeOptions}
-        fitView
-        minZoom={0.25}
-        maxZoom={2}
-        className="bg-zinc-50"
-      >
-        <Background variant={BackgroundVariant.Lines} gap={24} size={1} color="rgba(163, 163, 163, 0.15)" />
-      </ReactFlow>
-      <StatusBar />
+    <div className="flex h-screen w-full flex-col bg-white">
+      <Navbar
+        zoomLevel={zoom}
+        onZoomIn={() => zoomIn()}
+        onZoomOut={() => zoomOut()}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onSave={handleSave}
+        onLoad={handleLoad}
+        onDelete={handleDelete}
+        onNew={handleNew}
+        projectName={projectName}
+        onProjectNameChange={handleProjectNameChange}
+        saveStatus={saveStatus}
+      />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <div className="relative flex-1">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onInit={onInit}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            nodeTypes={nodeTypes}
+            defaultEdgeOptions={defaultEdgeOptions}
+            fitView
+            minZoom={0.25}
+            maxZoom={2}
+            className="bg-zinc-50"
+          >
+            <Background variant={BackgroundVariant.Lines} gap={24} size={1} color="rgba(163, 163, 163, 0.15)" />
+          </ReactFlow>
+          <StatusBar />
+        </div>
+      </div>
     </div>
   );
 }
 
-// wraps the canvas so nodes inside can talk to the flow
-export function FlowCanvas({ onStateChange }: { onStateChange: (handle: FlowCanvasHandle) => void }) {
+export function FlowCanvas() {
   return (
     <ReactFlowProvider>
-      <FlowCanvasInner onStateChange={onStateChange} />
+      <FlowCanvasInner />
     </ReactFlowProvider>
   );
 }
