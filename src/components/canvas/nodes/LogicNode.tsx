@@ -44,7 +44,7 @@ function LogicNodeComponent({ id, data, selected }: NodeProps<LogicNodeData>) {
       <NodeResizer minWidth={160} minHeight={70} isVisible={selected} color="#a1a1aa" lineStyle={{ borderWidth: 1 }} handleStyle={{ width: 6, height: 6, borderRadius: 2 }} />
       <Handle type="target" position={Position.Left} className="!-left-[5px] !h-2.5 !w-2.5 !rounded-full !border-2 !border-zinc-300 !bg-white" />
 
-      <div className="flex flex-1 flex-col gap-2 px-3 py-2.5">
+      <div className="flex flex-1 flex-col gap-2 px-3 py-2.5 nodrag">
         <div>
           <div className="truncate text-[13px] font-medium text-zinc-900">{label}</div>
           <div className="text-[11px] text-zinc-400">{optionLabel}</div>

@@ -16,6 +16,8 @@ import {
   type Node,
   type Edge,
 } from "reactflow";
+import { geminiGenerate } from "@/lib/gemini";
+import { buildAnalysisPrompt } from "@/lib/aiContext";
 import "reactflow/dist/style.css";
 import { IdeaNode } from "./nodes/IdeaNode";
 import { CommentNode } from "./nodes/CommentNode";
@@ -23,9 +25,17 @@ import { ActionItemNode } from "./nodes/ActionItemNode";
 import { AINode } from "./nodes/AINode";
 import { ConnectorNode } from "./nodes/ConnectorNode";
 import { GroupNode } from "./nodes/GroupNode";
+import { CostNode } from "./nodes/CostNode";
+import { RiskNode } from "./nodes/RiskNode";
+import { GoalNode } from "./nodes/GoalNode";
+import { DecisionNode } from "./nodes/DecisionNode";
+import { StakeholderNode } from "./nodes/StakeholderNode";
+import { QuestionNode } from "./nodes/QuestionNode";
+import { SummaryNode } from "./nodes/SummaryNode";
 import { StatusBar } from "./StatusBar";
 import { Navbar, type SavedSession } from "./Navbar";
 import { Sidebar } from "./Sidebar";
+import { type Template } from "@/lib/templates";
 
 const AUTO_SAVE_KEY = "meetingflow-canvas-autosave";
 const SAVES_KEY = "meetingflow-saves";
@@ -37,6 +47,13 @@ const nodeTypes = {
   aiNode: AINode,
   connectorNode: ConnectorNode,
   groupNode: GroupNode,
+  costNode: CostNode,
+  riskNode: RiskNode,
+  goalNode: GoalNode,
+  decisionNode: DecisionNode,
+  stakeholderNode: StakeholderNode,
+  questionNode: QuestionNode,
+  summaryNode: SummaryNode,
 };
 
 const defaultNodeData: Record<string, Record<string, unknown>> = {
@@ -44,15 +61,29 @@ const defaultNodeData: Record<string, Record<string, unknown>> = {
   commentNode: { label: "Comment", content: "" },
   actionItemNode: { label: "Action Item", content: "", assignee: "" },
   aiNode: { label: "Ask Gemini", prompt: "", output: "", isGenerating: false },
-  groupNode: { label: "Group", },
+  costNode:        { label: "Cost", content: "" },
+  riskNode:        { label: "Risk", content: "" },
+  goalNode:        { label: "Goal", content: "" },
+  decisionNode:    { label: "Decision", content: "", outcome: "Pending" },
+  stakeholderNode: { label: "Stakeholder", content: "", role: "" },
+  questionNode:    { label: "Question", content: "", answered: false },
+  summaryNode:     { label: "Summary", content: "" },
+  groupNode:       { label: "Group" },
 };
 
 const defaultNodeSize: Record<string, { width: number; height: number }> = {
-  ideaNode: { width: 220, height: 180 },
-  commentNode: { width: 220, height: 160 },
-  actionItemNode: { width: 220, height: 200 },
-  aiNode: { width: 240, height: 240 },
-  groupNode: { width: 300, height: 200 },
+  ideaNode:        { width: 220, height: 180 },
+  commentNode:     { width: 220, height: 160 },
+  actionItemNode:  { width: 220, height: 200 },
+  aiNode:          { width: 240, height: 240 },
+  costNode:        { width: 220, height: 160 },
+  riskNode:        { width: 220, height: 160 },
+  goalNode:        { width: 220, height: 160 },
+  decisionNode:    { width: 220, height: 180 },
+  stakeholderNode: { width: 220, height: 180 },
+  questionNode:    { width: 220, height: 160 },
+  summaryNode:     { width: 240, height: 180 },
+  groupNode:       { width: 300, height: 200 },
 };
 
 function loadFromStorage(): { nodes: Node[]; edges: Edge[] } {
@@ -104,18 +135,25 @@ export interface FlowCanvasHandle {
 
 function FlowCanvasInner() {
   const flowInstanceRef = useRef<ReactFlowInstance | null>(null);
-  const { nodes: initialNodes, edges: initialEdges } = loadFromStorage();
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const { zoomIn, zoomOut } = useReactFlow();
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const { nodes: savedNodes, edges: savedEdges } = loadFromStorage();
+    if (savedNodes.length > 0 || savedEdges.length > 0) {
+      setNodes(savedNodes);
+      setEdges(savedEdges);
+    }
+    const savedName = localStorage.getItem("meetingflow-project-name");
+    if (savedName) setProjectName(savedName);
+    setHydrated(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const { zoomIn, zoomOut, fitView } = useReactFlow();
   const { zoom } = useViewport();
 
-  const [projectName, setProjectName] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("meetingflow-project-name") ?? "Untitled Meeting";
-    }
-    return "Untitled Meeting";
-  });
+  const [projectName, setProjectName] = useState("Untitled Meeting");
   const [saveStatus, setSaveStatus] = useState<"unsaved" | "saved">("unsaved");
   const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -175,6 +213,17 @@ function FlowCanvasInner() {
     setSaveStatus("unsaved");
   }, [pushSnapshot, setNodes, setEdges]);
 
+  const handleLoadTemplate = useCallback((template: Template) => {
+    pushSnapshot();
+    setNodes(template.nodes);
+    setEdges(template.edges);
+    const name = `${template.label} Template`;
+    setProjectName(name);
+    localStorage.setItem("meetingflow-project-name", name);
+    setSaveStatus("unsaved");
+    setTimeout(() => fitView({ padding: 0.15, duration: 400 }), 50);
+  }, [pushSnapshot, setNodes, setEdges, fitView]);
+
   const handleProjectNameChange = useCallback((name: string) => {
     setProjectName(name);
     localStorage.setItem("meetingflow-project-name", name);
@@ -217,14 +266,14 @@ function FlowCanvasInner() {
       pushSnapshot();
       setNodes(sanitized);
       setEdges(savedEdges ?? []);
-      // update the project name to match the loaded session
       setProjectName(session.name);
       localStorage.setItem("meetingflow-project-name", session.name);
       setSaveStatus("saved");
       if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
       saveStatusTimer.current = setTimeout(() => setSaveStatus("unsaved"), 3000);
+      setTimeout(() => fitView({ padding: 0.15, duration: 400 }), 50);
     } catch { /* ignore */ }
-  }, [pushSnapshot, setNodes, setEdges]);
+  }, [pushSnapshot, setNodes, setEdges, fitView]);
 
   // delete a named save from localStorage
   const handleDelete = useCallback((name: string) => {
@@ -277,14 +326,36 @@ function FlowCanvasInner() {
     event.dataTransfer.dropEffect = "move";
   }, []);
 
+  // ── Analyze Selection ──────────────────────────────────────────────────────
+  const [analyzeResult, setAnalyzeResult] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const selectedNodes = nodes.filter((n) => n.selected);
+
+  const handleAnalyzeSelection = useCallback(async () => {
+    if (selectedNodes.length === 0) return;
+    setIsAnalyzing(true);
+    setAnalyzeResult(null);
+    try {
+      const prompt = buildAnalysisPrompt(selectedNodes as unknown as Array<{ id: string; type?: string; data?: Record<string, unknown> }>);
+      const result = await geminiGenerate(prompt);
+      setAnalyzeResult(result);
+    } catch {
+      setAnalyzeResult("Analysis failed. Please try again.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [selectedNodes]);
+
   // mark unsaved whenever canvas content changes (skip on initial mount)
   const isFirstRender = useRef(true);
   useEffect(() => {
+    if (!hydrated) return;
     if (isFirstRender.current) { isFirstRender.current = false; return; }
     setSaveStatus("unsaved");
     saveAutoSave(nodes, edges);
     debouncedPushSnapshot();
-  }, [nodes, edges, debouncedPushSnapshot]);
+  }, [nodes, edges, hydrated, debouncedPushSnapshot]);
 
   return (
     <div className="flex h-screen w-full flex-col bg-white">
@@ -305,7 +376,7 @@ function FlowCanvasInner() {
         saveStatus={saveStatus}
       />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
+        <Sidebar onLoadTemplate={handleLoadTemplate} />
         <div className="relative flex-1">
           <ReactFlow
             nodes={nodes}
@@ -326,6 +397,30 @@ function FlowCanvasInner() {
             <Background variant={BackgroundVariant.Lines} gap={24} size={1} color="rgba(163, 163, 163, 0.15)" />
           </ReactFlow>
           <StatusBar />
+
+          {/* Analyze Selection floating button + panel */}
+          {selectedNodes.length >= 2 && (
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
+              {analyzeResult && (
+                <div className="w-80 rounded-lg border border-purple-200 bg-white shadow-lg">
+                  <div className="flex items-center justify-between border-b border-zinc-100 px-3 py-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-violet-600">✨ AI Analysis</span>
+                    <button onClick={() => setAnalyzeResult(null)} className="text-zinc-400 hover:text-zinc-600 text-xs">✕</button>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto px-3 py-2">
+                    <p className="text-[11px] leading-relaxed text-zinc-700 whitespace-pre-wrap">{analyzeResult}</p>
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={handleAnalyzeSelection}
+                disabled={isAnalyzing}
+                className="flex items-center gap-2 rounded-full border border-violet-600 bg-violet-600 px-4 py-2 text-xs font-semibold text-white shadow-lg transition-colors hover:bg-violet-700 disabled:opacity-60"
+              >
+                {isAnalyzing ? "Analyzing..." : `✨ Analyze ${selectedNodes.length} selected nodes`}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,14 +1,24 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { Handle, Position, NodeResizer, type NodeProps, useReactFlow } from "reactflow";
+import {
+  Handle,
+  Position,
+  NodeResizer,
+  type NodeProps,
+  useReactFlow,
+} from "reactflow";
 
 export interface CommentNodeData {
   label: string;
   content: string;
 }
 
-function CommentNodeComponent({ id, data, selected }: NodeProps<CommentNodeData>) {
+function CommentNodeComponent({
+  id,
+  data,
+  selected,
+}: NodeProps<CommentNodeData>) {
   const { setNodes } = useReactFlow();
   const content = data.content ?? "";
 
@@ -16,11 +26,13 @@ function CommentNodeComponent({ id, data, selected }: NodeProps<CommentNodeData>
     (updates: Partial<CommentNodeData>) => {
       setNodes((nodes) =>
         nodes.map((node) =>
-          node.id === id ? { ...node, data: { ...node.data, ...updates } } : node
-        )
+          node.id === id
+            ? { ...node, data: { ...node.data, ...updates } }
+            : node,
+        ),
       );
     },
-    [id, setNodes]
+    [id, setNodes],
   );
 
   return (
@@ -28,16 +40,31 @@ function CommentNodeComponent({ id, data, selected }: NodeProps<CommentNodeData>
       className={`
         group relative flex h-full min-h-0 w-full flex-col rounded-lg border bg-white
         transition-all duration-150 hover:shadow-md
-        ${selected ? "border-yellow-500 shadow-md" : "border-zinc-200 shadow-sm"}
+        ${selected ? "border-blue-400 shadow-md" : "border-zinc-200 shadow-sm"}
       `}
     >
-      <div className="absolute left-0 top-0 h-full w-1 rounded-l-lg bg-yellow-400" />
-      <NodeResizer minWidth={180} minHeight={120} isVisible={selected} color="#eab308" lineStyle={{ borderWidth: 1 }} handleStyle={{ width: 6, height: 6, borderRadius: 2 }} />
-      <Handle type="target" position={Position.Left} className="!-left-[5px] !h-2.5 !w-2.5 !rounded-full !border-2 !border-yellow-300 !bg-white" />
+      <div className="absolute left-0 top-0 h-full w-1 rounded-l-lg bg-blue-400" />
+      <NodeResizer
+        minWidth={180}
+        minHeight={120}
+        isVisible={selected}
+        color="#60a5fa"
+        lineStyle={{ borderWidth: 1 }}
+        handleStyle={{ width: 6, height: 6, borderRadius: 2 }}
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!-left-[5px] !h-2.5 !w-2.5 !rounded-full !border-2 !border-blue-200 !bg-white"
+      />
 
       <div className="shrink-0 pl-4 pr-3 py-2.5">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-yellow-600">💬 Comment</div>
-        <div className="truncate text-[11px] text-zinc-400 mt-0.5">{content ? content.slice(0, 45) : "Add a comment or clarification..."}</div>
+        <div className="text-[11px] font-semibold uppercase tracking-wider  ">
+          Comment
+        </div>
+        <div className="truncate text-[11px] text-zinc-400 mt-0.5">
+          {content ? content.slice(0, 45) : "Add a comment or clarification..."}
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto border-t border-zinc-100 pl-4 pr-3 py-2">
@@ -45,11 +72,15 @@ function CommentNodeComponent({ id, data, selected }: NodeProps<CommentNodeData>
           value={content}
           onChange={(e) => updateData({ content: e.target.value })}
           placeholder="Add a comment or clarification on an idea..."
-          className="h-full min-h-[60px] w-full resize-none rounded border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs text-zinc-700 placeholder:text-zinc-400 focus:border-yellow-400 focus:outline-none"
+          className="h-full min-h-[60px] w-full resize-none rounded border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs text-zinc-700 placeholder:text-zinc-400 focus:border-blue-300 focus:outline-none"
         />
       </div>
 
-      <Handle type="source" position={Position.Right} className="!-right-[5px] !h-2.5 !w-2.5 !rounded-full !border-2 !border-yellow-300 !bg-white" />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!-right-[5px] !h-2.5 !w-2.5 !rounded-full !border-2 !border-blue-200 !bg-white"
+      />
     </div>
   );
 }

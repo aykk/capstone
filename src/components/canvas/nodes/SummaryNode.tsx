@@ -9,22 +9,24 @@ import {
   useReactFlow,
 } from "reactflow";
 
-export interface IdeaNodeData {
+export interface SummaryNodeData {
   label: string;
   content: string;
 }
 
-function IdeaNodeComponent({ id, data, selected }: NodeProps<IdeaNodeData>) {
+function SummaryNodeComponent({
+  id,
+  data,
+  selected,
+}: NodeProps<SummaryNodeData>) {
   const { setNodes } = useReactFlow();
   const content = data.content ?? "";
 
   const updateData = useCallback(
-    (updates: Partial<IdeaNodeData>) => {
+    (updates: Partial<SummaryNodeData>) => {
       setNodes((nodes) =>
-        nodes.map((node) =>
-          node.id === id
-            ? { ...node, data: { ...node.data, ...updates } }
-            : node,
+        nodes.map((n) =>
+          n.id === id ? { ...n, data: { ...n.data, ...updates } } : n,
         ),
       );
     },
@@ -36,15 +38,15 @@ function IdeaNodeComponent({ id, data, selected }: NodeProps<IdeaNodeData>) {
       className={`
         group relative flex h-full min-h-0 w-full flex-col rounded-lg border bg-white
         transition-all duration-150 hover:shadow-md
-        ${selected ? "border-blue-600 shadow-md" : "border-zinc-200 shadow-sm"}
+        ${selected ? "border-blue-300 shadow-md" : "border-zinc-200 shadow-sm"}
       `}
     >
-      <div className="absolute left-0 top-0 h-full w-1 rounded-l-lg bg-blue-600" />
+      <div className="absolute left-0 top-0 h-full w-1 rounded-l-lg bg-blue-300" />
       <NodeResizer
         minWidth={200}
         minHeight={140}
         isVisible={selected}
-        color="#2563eb"
+        color="#93c5fd"
         lineStyle={{ borderWidth: 1 }}
         handleStyle={{ width: 6, height: 6, borderRadius: 2 }}
       />
@@ -56,12 +58,10 @@ function IdeaNodeComponent({ id, data, selected }: NodeProps<IdeaNodeData>) {
 
       <div className="shrink-0 pl-4 pr-3 py-2.5">
         <div className="text-[11px] font-semibold uppercase tracking-wider  ">
-          Idea
+          Summary
         </div>
         <div className="truncate text-[11px] text-zinc-400 mt-0.5">
-          {content
-            ? content.slice(0, 45)
-            : "Capture an idea from the meeting..."}
+          {content ? content.slice(0, 45) : "AI-generated summary..."}
         </div>
       </div>
 
@@ -69,8 +69,8 @@ function IdeaNodeComponent({ id, data, selected }: NodeProps<IdeaNodeData>) {
         <textarea
           value={content}
           onChange={(e) => updateData({ content: e.target.value })}
-          placeholder="Describe the idea..."
-          className="h-full min-h-[80px] w-full resize-none rounded border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs text-zinc-700 placeholder:text-zinc-400 focus:border-blue-400 focus:outline-none"
+          placeholder="Summary content..."
+          className="h-full min-h-[80px] w-full resize-none rounded border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs text-zinc-700 placeholder:text-zinc-400 focus:border-blue-200 focus:outline-none"
         />
       </div>
 
@@ -83,4 +83,4 @@ function IdeaNodeComponent({ id, data, selected }: NodeProps<IdeaNodeData>) {
   );
 }
 
-export const IdeaNode = memo(IdeaNodeComponent);
+export const SummaryNode = memo(SummaryNodeComponent);
