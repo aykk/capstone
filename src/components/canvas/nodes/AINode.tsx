@@ -53,13 +53,14 @@ function AINodeComponent({ id, data, selected }: NodeProps<AINodeData>) {
   const { setHighlightedNodeIds } = useHighlightedNodes();
 
   useEffect(() => {
-    if (selected) {
-      const incomers = getIncomers({ id }, getNodes(), getEdges());
+    const self = getNode(id);
+    if (selected && self) {
+      const incomers = getIncomers(self, getNodes(), getEdges());
       setHighlightedNodeIds(new Set(incomers.map((n) => n.id)));
     } else {
       setHighlightedNodeIds(new Set());
     }
-  }, [selected, id, getNodes, getEdges, setHighlightedNodeIds]);
+  }, [selected, id, getNode, getNodes, getEdges, setHighlightedNodeIds]);
 
   const prompt = data.prompt ?? "";
   const output = data.output ?? "";
