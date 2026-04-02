@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useState } from "react";
 import { NodeResizer, type NodeProps, useReactFlow } from "reactflow";
+import { useHighlightedNodes } from "@/context/HighlightedNodesContext";
 
 export interface GroupNodeData {
   label: string;
@@ -9,6 +10,8 @@ export interface GroupNodeData {
 
 function GroupNodeComponent({ id, data, selected }: NodeProps<GroupNodeData>) {
   const { setNodes } = useReactFlow();
+  const { highlightedNodeIds } = useHighlightedNodes();
+  const isContext = highlightedNodeIds.has(id);
   const [editing, setEditing] = useState(false);
   const label = data.label ?? "Group";
 
@@ -29,6 +32,7 @@ function GroupNodeComponent({ id, data, selected }: NodeProps<GroupNodeData>) {
         relative h-full w-full rounded-xl border-2 border-dashed bg-zinc-50/60
         transition-colors duration-150
         ${selected ? "border-zinc-400 bg-zinc-100/60" : "border-zinc-300"}
+        ${isContext ? "ring-1 ring-green-400" : ""}
       `}
     >
       <NodeResizer

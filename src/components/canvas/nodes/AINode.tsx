@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useState, useEffect } from "react";
 import {
   Handle,
   Position,
@@ -8,9 +8,11 @@ import {
   type NodeProps,
   useReactFlow,
   useStore,
+  getIncomers,
 } from "reactflow";
 import { geminiGenerate } from "@/lib/gemini";
 import { buildContextPrompt } from "@/lib/aiContext";
+import { useHighlightedNodes } from "@/context/HighlightedNodesContext";
 
 export interface AINodeData {
   label: string;
@@ -38,7 +40,6 @@ const MODE_SUFFIX: Record<GenerateMode, string> = {
     "Based on the above context, suggest 3-5 new ideas or improvements. Format each as a bullet starting with '- '.",
 };
 
-// maps generate mode to the node type to create
 const MODE_NODE_TYPE: Partial<Record<GenerateMode, string>> = {
   actions: "actionItemNode",
   ideas: "ideaNode",
@@ -46,9 +47,20 @@ const MODE_NODE_TYPE: Partial<Record<GenerateMode, string>> = {
 };
 
 function AINodeComponent({ id, data, selected }: NodeProps<AINodeData>) {
-  const { setNodes, getNode } = useReactFlow();
+  const { setNodes, getNode, getNodes, getEdges } = useReactFlow();
   const edges = useStore((s) => s.edges);
   const nodes = useStore((s) => s.nodeInternals);
+  const { setHighlightedNodeIds } = useHighlightedNodes();
+
+  useEffect(() => {
+    if (selected) {
+      const incomers = getIncomers({ id }, getNodes(), getEdges());
+      setHighlightedNodeIds(new Set(incomers.map((n) => n.id)));
+    } else {
+      setHighlightedNodeIds(new Set());
+    }
+  }, [selected, id, getNodes, getEdges, setHighlightedNodeIds]);
+
   const prompt = data.prompt ?? "";
   const output = data.output ?? "";
   const isGenerating = data.isGenerating ?? false;
@@ -58,9 +70,7 @@ function AINodeComponent({ id, data, selected }: NodeProps<AINodeData>) {
     (updates: Partial<AINodeData>) => {
       setNodes((nds) =>
         nds.map((node) =>
-          node.id === id
-            ? { ...node, data: { ...node.data, ...updates } }
-            : node,
+          node.id === id ? { ...node, data: { ...node.data, ...updates } } : node,
         ),
       );
     },
@@ -122,7 +132,6 @@ function AINodeComponent({ id, data, selected }: NodeProps<AINodeData>) {
         ),
       );
 
-      // auto-spawn nodes for actions/ideas/summarize modes
       const spawnType = MODE_NODE_TYPE[mode];
       if (spawnType) {
         const lines = response
@@ -188,7 +197,6 @@ function AINodeComponent({ id, data, selected }: NodeProps<AINodeData>) {
       )}
 
       <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-auto border-t border-zinc-100 pl-4 pr-3 py-2 nodrag">
-        {/* mode selector */}
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as GenerateMode)}
@@ -210,6 +218,7 @@ function AINodeComponent({ id, data, selected }: NodeProps<AINodeData>) {
           disabled={isGenerating}
         />
         <button
+          type="button"
           onClick={handleGenerate}
           disabled={isGenerating}
           className="w-full shrink-0 rounded border border-violet-600 bg-violet-600 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"

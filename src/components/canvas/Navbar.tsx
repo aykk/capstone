@@ -10,10 +10,10 @@ import {
   IconSave,
   IconFolderOpen,
   IconTrash,
+  IconDownload,
 } from "@/components/icons";
 
 const SAVES_KEY = "meetingflow-saves";
-const PROJECT_NAME_KEY = "meetingflow-project-name";
 
 export interface SavedSession {
   name: string;
@@ -33,6 +33,7 @@ interface NavbarProps {
   onLoad: (session: SavedSession) => void;
   onDelete: (name: string) => void;
   onNew: () => void;
+  onExport: () => void;
   projectName: string;
   onProjectNameChange: (name: string) => void;
   saveStatus: "unsaved" | "saved";
@@ -58,6 +59,7 @@ export function Navbar({
   onLoad,
   onDelete,
   onNew,
+  onExport,
   projectName,
   onProjectNameChange,
   saveStatus,
@@ -200,12 +202,22 @@ export function Navbar({
           + New
         </button>
         <button
+          type="button"
           onClick={handleSave}
           className="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
           title="Save current meeting"
         >
           <IconSave className="h-3 w-3" />
           Save
+        </button>
+        <button
+          type="button"
+          onClick={onExport}
+          className="flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-zinc-600"
+          title="Export canvas as JSON"
+        >
+          <IconDownload className="h-3 w-3" />
+          Export
         </button>
 
         <div className="relative" ref={loadMenuRef}>

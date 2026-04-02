@@ -2,13 +2,16 @@
 
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
+import { useHighlightedNodes } from "@/context/HighlightedNodesContext";
 
 export interface ConnectorNodeData {
   label?: string;
 }
 
 // small junction dot — links multiple ideas together on the canvas
-function ConnectorNodeComponent({ selected }: NodeProps<ConnectorNodeData>) {
+function ConnectorNodeComponent({ id, selected }: NodeProps<ConnectorNodeData>) {
+  const { highlightedNodeIds } = useHighlightedNodes();
+  const isContext = highlightedNodeIds.has(id);
   return (
     <div className="relative flex flex-col items-center gap-1">
       <div
@@ -16,6 +19,7 @@ function ConnectorNodeComponent({ selected }: NodeProps<ConnectorNodeData>) {
           relative flex h-8 w-8 items-center justify-center rounded-full border-2 bg-white
           transition-all duration-150 hover:shadow-md
           ${selected ? "border-zinc-900 shadow-md" : "border-zinc-400 shadow-sm"}
+          ${isContext ? "ring-1 ring-green-400" : ""}
         `}
       >
         <div className="h-2 w-2 rounded-full bg-zinc-400" />

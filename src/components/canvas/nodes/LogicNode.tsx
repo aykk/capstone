@@ -2,6 +2,7 @@
 
 import { memo, useCallback } from "react";
 import { Handle, Position, NodeResizer, type NodeProps, useReactFlow } from "reactflow";
+import { useHighlightedNodes } from "@/context/HighlightedNodesContext";
 
 export interface LogicNodeData {
   label: string;
@@ -17,6 +18,8 @@ const LOGIC_OPTIONS = [
 
 function LogicNodeComponent({ id, data, selected }: NodeProps<LogicNodeData>) {
   const { setNodes } = useReactFlow();
+  const { highlightedNodeIds } = useHighlightedNodes();
+  const isContext = highlightedNodeIds.has(id);
   const label = data.label ?? "Logic Node";
   const option = data.option ?? "once";
 
@@ -39,6 +42,7 @@ function LogicNodeComponent({ id, data, selected }: NodeProps<LogicNodeData>) {
         group relative flex h-full min-h-0 w-full flex-col rounded-lg border bg-white
         transition-all duration-150 hover:shadow-md
         ${selected ? "border-zinc-900 shadow-md" : "border-zinc-200 shadow-sm"}
+        ${isContext ? "ring-1 ring-green-400" : ""}
       `}
     >
       <NodeResizer minWidth={160} minHeight={70} isVisible={selected} color="#a1a1aa" lineStyle={{ borderWidth: 1 }} handleStyle={{ width: 6, height: 6, borderRadius: 2 }} />

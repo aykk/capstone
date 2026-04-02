@@ -1,13 +1,8 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import {
-  Handle,
-  Position,
-  NodeResizer,
-  type NodeProps,
-  useReactFlow,
-} from "reactflow";
+import { Handle, Position, NodeResizer, type NodeProps, useReactFlow } from "reactflow";
+import { useHighlightedNodes } from "@/context/HighlightedNodesContext";
 
 export interface CommentNodeData {
   label: string;
@@ -20,15 +15,15 @@ function CommentNodeComponent({
   selected,
 }: NodeProps<CommentNodeData>) {
   const { setNodes } = useReactFlow();
+  const { highlightedNodeIds } = useHighlightedNodes();
+  const isContext = highlightedNodeIds.has(id);
   const content = data.content ?? "";
 
   const updateData = useCallback(
     (updates: Partial<CommentNodeData>) => {
       setNodes((nodes) =>
         nodes.map((node) =>
-          node.id === id
-            ? { ...node, data: { ...node.data, ...updates } }
-            : node,
+          node.id === id ? { ...node, data: { ...node.data, ...updates } } : node,
         ),
       );
     },
@@ -41,6 +36,7 @@ function CommentNodeComponent({
         group relative flex h-full min-h-0 w-full flex-col rounded-lg border bg-white
         transition-all duration-150 hover:shadow-md
         ${selected ? "border-blue-400 shadow-md" : "border-zinc-200 shadow-sm"}
+        ${isContext ? "ring-1 ring-green-400" : ""}
       `}
     >
       <div className="absolute left-0 top-0 h-full w-1 rounded-l-lg bg-blue-400" />

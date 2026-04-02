@@ -8,6 +8,7 @@ import {
   type NodeProps,
   useReactFlow,
 } from "reactflow";
+import { useHighlightedNodes } from "@/context/HighlightedNodesContext";
 
 export interface SummaryNodeData {
   label: string;
@@ -20,6 +21,8 @@ function SummaryNodeComponent({
   selected,
 }: NodeProps<SummaryNodeData>) {
   const { setNodes } = useReactFlow();
+  const { highlightedNodeIds } = useHighlightedNodes();
+  const isContext = highlightedNodeIds.has(id);
   const content = data.content ?? "";
 
   const updateData = useCallback(
@@ -39,6 +42,7 @@ function SummaryNodeComponent({
         group relative flex h-full min-h-0 w-full flex-col rounded-lg border bg-white
         transition-all duration-150 hover:shadow-md
         ${selected ? "border-blue-300 shadow-md" : "border-zinc-200 shadow-sm"}
+        ${isContext ? "ring-1 ring-green-400" : ""}
       `}
     >
       <div className="absolute left-0 top-0 h-full w-1 rounded-l-lg bg-blue-300" />

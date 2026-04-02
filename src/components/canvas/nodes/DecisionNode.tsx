@@ -8,6 +8,7 @@ import {
   type NodeProps,
   useReactFlow,
 } from "reactflow";
+import { useHighlightedNodes } from "@/context/HighlightedNodesContext";
 
 export interface DecisionNodeData {
   label: string;
@@ -53,6 +54,8 @@ function DecisionNodeComponent({
   selected,
 }: NodeProps<DecisionNodeData>) {
   const { setNodes } = useReactFlow();
+  const { highlightedNodeIds } = useHighlightedNodes();
+  const isContext = highlightedNodeIds.has(id);
   const content = data.content ?? "";
   const outcome = data.outcome ?? "Pending";
   const styles = OUTCOME_STYLES[outcome] ?? OUTCOME_STYLES.Pending;
@@ -74,6 +77,7 @@ function DecisionNodeComponent({
         group relative flex h-full min-h-0 w-full flex-col rounded-lg border bg-white
         transition-all duration-150 hover:shadow-md
         ${selected ? `${styles.border} shadow-md` : "border-zinc-200 shadow-sm"}
+        ${isContext ? "ring-1 ring-green-400" : ""}
       `}
     >
       <div

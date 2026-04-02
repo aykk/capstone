@@ -36,6 +36,7 @@ import { StatusBar } from "./StatusBar";
 import { Navbar, type SavedSession } from "./Navbar";
 import { Sidebar } from "./Sidebar";
 import { type Template } from "@/lib/templates";
+import { HighlightedNodesProvider } from "@/context/HighlightedNodesContext";
 
 const AUTO_SAVE_KEY = "meetingflow-canvas-autosave";
 const SAVES_KEY = "meetingflow-saves";
@@ -122,16 +123,6 @@ const defaultEdgeOptions = {
 };
 
 type Snapshot = { nodes: Node[]; edges: Edge[] };
-
-export interface FlowCanvasHandle {
-  zoomIn: () => void;
-  zoomOut: () => void;
-  undo: () => void;
-  redo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
-  zoomLevel: number;
-}
 
 function FlowCanvasInner() {
   const flowInstanceRef = useRef<ReactFlowInstance | null>(null);
@@ -283,6 +274,17 @@ function FlowCanvasInner() {
     } catch { /* ignore */ }
   }, []);
 
+  const exportCanvas = useCallback(() => {
+    const data = { nodes, edges };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `meetingflow-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [nodes, edges]);
+
   const onInit = useCallback((instance: ReactFlowInstance) => {
     flowInstanceRef.current = instance;
   }, []);
@@ -371,57 +373,61 @@ function FlowCanvasInner() {
         onLoad={handleLoad}
         onDelete={handleDelete}
         onNew={handleNew}
+        onExport={exportCanvas}
         projectName={projectName}
         onProjectNameChange={handleProjectNameChange}
         saveStatus={saveStatus}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar onLoadTemplate={handleLoadTemplate} />
-        <div className="relative flex-1">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onInit={onInit}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-            nodeTypes={nodeTypes}
-            defaultEdgeOptions={defaultEdgeOptions}
-            fitView
-            minZoom={0.25}
-            maxZoom={2}
-            className="bg-zinc-50"
-          >
-            <Background variant={BackgroundVariant.Lines} gap={24} size={1} color="rgba(163, 163, 163, 0.15)" />
-          </ReactFlow>
-          <StatusBar />
+        <HighlightedNodesProvider>
+          <div className="relative flex-1">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onInit={onInit}
+              onDrop={onDrop}
+              onDragOver={onDragOver}
+              nodeTypes={nodeTypes}
+              defaultEdgeOptions={defaultEdgeOptions}
+              fitView
+              minZoom={0.25}
+              maxZoom={2}
+              className="bg-zinc-50"
+            >
+              <Background variant={BackgroundVariant.Lines} gap={24} size={1} color="rgba(163, 163, 163, 0.15)" />
+            </ReactFlow>
+            <StatusBar />
 
-          {/* Analyze Selection floating button + panel */}
-          {selectedNodes.length >= 2 && (
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
-              {analyzeResult && (
-                <div className="w-80 rounded-lg border border-purple-200 bg-white shadow-lg">
-                  <div className="flex items-center justify-between border-b border-zinc-100 px-3 py-2">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-violet-600">✨ AI Analysis</span>
-                    <button onClick={() => setAnalyzeResult(null)} className="text-zinc-400 hover:text-zinc-600 text-xs">✕</button>
+            {/* Analyze Selection floating button + panel */}
+            {selectedNodes.length >= 2 && (
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
+                {analyzeResult && (
+                  <div className="w-80 rounded-lg border border-purple-200 bg-white shadow-lg">
+                    <div className="flex items-center justify-between border-b border-zinc-100 px-3 py-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-violet-600">✨ AI Analysis</span>
+                      <button type="button" onClick={() => setAnalyzeResult(null)} className="text-zinc-400 hover:text-zinc-600 text-xs">✕</button>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto px-3 py-2">
+                      <p className="text-[11px] leading-relaxed text-zinc-700 whitespace-pre-wrap">{analyzeResult}</p>
+                    </div>
                   </div>
-                  <div className="max-h-48 overflow-y-auto px-3 py-2">
-                    <p className="text-[11px] leading-relaxed text-zinc-700 whitespace-pre-wrap">{analyzeResult}</p>
-                  </div>
-                </div>
-              )}
-              <button
-                onClick={handleAnalyzeSelection}
-                disabled={isAnalyzing}
-                className="flex items-center gap-2 rounded-full border border-violet-600 bg-violet-600 px-4 py-2 text-xs font-semibold text-white shadow-lg transition-colors hover:bg-violet-700 disabled:opacity-60"
-              >
-                {isAnalyzing ? "Analyzing..." : `✨ Analyze ${selectedNodes.length} selected nodes`}
-              </button>
-            </div>
-          )}
-        </div>
+                )}
+                <button
+                  type="button"
+                  onClick={handleAnalyzeSelection}
+                  disabled={isAnalyzing}
+                  className="flex items-center gap-2 rounded-full border border-violet-600 bg-violet-600 px-4 py-2 text-xs font-semibold text-white shadow-lg transition-colors hover:bg-violet-700 disabled:opacity-60"
+                >
+                  {isAnalyzing ? "Analyzing..." : `✨ Analyze ${selectedNodes.length} selected nodes`}
+                </button>
+              </div>
+            )}
+          </div>
+        </HighlightedNodesProvider>
       </div>
     </div>
   );

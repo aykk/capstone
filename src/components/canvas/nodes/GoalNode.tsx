@@ -8,6 +8,7 @@ import {
   type NodeProps,
   useReactFlow,
 } from "reactflow";
+import { useHighlightedNodes } from "@/context/HighlightedNodesContext";
 
 export interface GoalNodeData {
   label: string;
@@ -16,6 +17,8 @@ export interface GoalNodeData {
 
 function GoalNodeComponent({ id, data, selected }: NodeProps<GoalNodeData>) {
   const { setNodes } = useReactFlow();
+  const { highlightedNodeIds } = useHighlightedNodes();
+  const isContext = highlightedNodeIds.has(id);
   const content = data.content ?? "";
 
   const updateData = useCallback(
@@ -35,6 +38,7 @@ function GoalNodeComponent({ id, data, selected }: NodeProps<GoalNodeData>) {
         group relative flex h-full min-h-0 w-full flex-col rounded-lg border bg-white
         transition-all duration-150 hover:shadow-md
         ${selected ? "border-red-400 shadow-md" : "border-zinc-200 shadow-sm"}
+        ${isContext ? "ring-1 ring-green-400" : ""}
       `}
     >
       <div className="absolute left-0 top-0 h-full w-1 rounded-l-lg bg-red-400" />

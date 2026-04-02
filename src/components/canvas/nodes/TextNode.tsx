@@ -2,6 +2,7 @@
 
 import { memo, useCallback } from "react";
 import { Handle, Position, NodeResizer, type NodeProps, useReactFlow } from "reactflow";
+import { useHighlightedNodes } from "@/context/HighlightedNodesContext";
 
 export interface TextNodeData {
   label: string;
@@ -10,6 +11,8 @@ export interface TextNodeData {
 
 function TextNodeComponent({ id, data, selected }: NodeProps<TextNodeData>) {
   const { setNodes } = useReactFlow();
+  const { highlightedNodeIds } = useHighlightedNodes();
+  const isContext = highlightedNodeIds.has(id);
   const label = data.label ?? "Text Node";
   const content = data.content ?? "";
 
@@ -30,6 +33,7 @@ function TextNodeComponent({ id, data, selected }: NodeProps<TextNodeData>) {
         group relative flex h-full min-h-0 w-full flex-col rounded-lg border bg-white
         transition-all duration-150 hover:shadow-md
         ${selected ? "border-zinc-900 shadow-md" : "border-zinc-200 shadow-sm"}
+        ${isContext ? "ring-1 ring-green-400" : ""}
       `}
     >
       <NodeResizer minWidth={180} minHeight={120} isVisible={selected} color="#a1a1aa" lineStyle={{ borderWidth: 1 }} handleStyle={{ width: 6, height: 6, borderRadius: 2 }} />
