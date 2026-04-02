@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import {
-  IconMeeting,
+  IconFlowstate,
   IconUndo,
   IconRedo,
   IconZoomIn,
@@ -12,8 +12,7 @@ import {
   IconTrash,
   IconDownload,
 } from "@/components/icons";
-
-const SAVES_KEY = "meetingflow-saves";
+import { SAVES_KEY, migrateLegacyFlowstateKeys } from "@/lib/flowstateStorage";
 
 export interface SavedSession {
   name: string;
@@ -41,6 +40,7 @@ interface NavbarProps {
 
 function getSaves(): SavedSession[] {
   try {
+    migrateLegacyFlowstateKeys();
     return JSON.parse(localStorage.getItem(SAVES_KEY) ?? "[]");
   } catch {
     return [];
@@ -99,7 +99,7 @@ export function Navbar({
 
   const commitName = () => {
     setEditing(false);
-    const trimmed = localName.trim() || "Untitled Meeting";
+    const trimmed = localName.trim() || "Untitled Project";
     setLocalName(trimmed);
     onProjectNameChange(trimmed);
   };
@@ -115,12 +115,12 @@ export function Navbar({
 
   return (
     <nav className="flex h-11 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4">
-      {/* left: branding + meeting title */}
+      {/* left: branding + project name */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <IconMeeting className="h-5 w-5 text-zinc-900" />
+          <IconFlowstate className="h-5 w-5 text-zinc-900" />
           <span className="text-sm font-semibold text-zinc-900">
-            MeetingFlow
+            Flowstate
           </span>
         </div>
         <div className="h-4 w-px bg-zinc-200" />
@@ -139,7 +139,7 @@ export function Navbar({
           <button
             onClick={() => setEditing(true)}
             className="rounded px-1.5 py-0.5 text-sm   transition-colors hover:bg-zinc-50 hover:text-zinc-700"
-            title="Click to rename this meeting"
+            title="Click to rename this project"
           >
             {projectName}
           </button>
@@ -197,7 +197,7 @@ export function Navbar({
         <button
           onClick={onNew}
           className="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
-          title="Start a new blank meeting"
+          title="Start a new blank canvas"
         >
           + New
         </button>
@@ -205,7 +205,7 @@ export function Navbar({
           type="button"
           onClick={handleSave}
           className="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
-          title="Save current meeting"
+          title="Save current canvas"
         >
           <IconSave className="h-3 w-3" />
           Save
@@ -224,7 +224,7 @@ export function Navbar({
           <button
             onClick={handleOpenLoad}
             className="flex items-center gap-1.5 rounded-md border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-zinc-800"
-            title="Load a saved meeting"
+            title="Load a saved canvas"
           >
             <IconFolderOpen className="h-3 w-3" />
             Load
@@ -234,12 +234,12 @@ export function Navbar({
             <div className="absolute right-0 top-full mt-1 z-50 w-64 rounded-lg border border-zinc-200 bg-white shadow-lg">
               <div className="px-3 py-2 border-b border-zinc-100">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
-                  Saved Meetings
+                  Saved canvases
                 </span>
               </div>
               {saves.length === 0 ? (
                 <div className="px-3 py-4 text-center text-xs text-zinc-400">
-                  No saved meetings yet
+                  No saved canvases yet
                 </div>
               ) : (
                 <div className="max-h-60 overflow-y-auto py-1">
@@ -271,7 +271,7 @@ export function Navbar({
                           );
                         }}
                         className="shrink-0 rounded p-1 text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-500"
-                        title="Delete this saved meeting"
+                        title="Delete this saved canvas"
                       >
                         <IconTrash className="h-3.5 w-3.5" />
                       </button>

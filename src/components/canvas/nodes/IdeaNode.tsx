@@ -65,7 +65,7 @@ function IdeaNodeComponent({ id, data, selected }: NodeProps<IdeaNodeData>) {
         <div className="truncate text-[11px] text-zinc-400 mt-0.5">
           {content
             ? content.slice(0, 45)
-            : "Capture an idea from the meeting..."}
+            : "Capture an idea…"}
         </div>
       </div>
 

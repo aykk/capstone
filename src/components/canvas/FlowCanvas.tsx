@@ -37,9 +37,12 @@ import { Navbar, type SavedSession } from "./Navbar";
 import { Sidebar } from "./Sidebar";
 import { type Template } from "@/lib/templates";
 import { HighlightedNodesProvider } from "@/context/HighlightedNodesContext";
-
-const AUTO_SAVE_KEY = "meetingflow-canvas-autosave";
-const SAVES_KEY = "meetingflow-saves";
+import {
+  AUTO_SAVE_KEY,
+  SAVES_KEY,
+  PROJECT_NAME_KEY,
+  migrateLegacyFlowstateKeys,
+} from "@/lib/flowstateStorage";
 
 const nodeTypes = {
   ideaNode: IdeaNode,
@@ -131,12 +134,13 @@ function FlowCanvasInner() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    migrateLegacyFlowstateKeys();
     const { nodes: savedNodes, edges: savedEdges } = loadFromStorage();
     if (savedNodes.length > 0 || savedEdges.length > 0) {
       setNodes(savedNodes);
       setEdges(savedEdges);
     }
-    const savedName = localStorage.getItem("meetingflow-project-name");
+    const savedName = localStorage.getItem(PROJECT_NAME_KEY);
     if (savedName) setProjectName(savedName);
     setHydrated(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,7 +148,7 @@ function FlowCanvasInner() {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
   const { zoom } = useViewport();
 
-  const [projectName, setProjectName] = useState("Untitled Meeting");
+  const [projectName, setProjectName] = useState("Untitled Project");
   const [saveStatus, setSaveStatus] = useState<"unsaved" | "saved">("unsaved");
   const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -197,9 +201,9 @@ function FlowCanvasInner() {
     pushSnapshot();
     setNodes([]);
     setEdges([]);
-    const newName = "Untitled Meeting";
+    const newName = "Untitled Project";
     setProjectName(newName);
-    localStorage.setItem("meetingflow-project-name", newName);
+    localStorage.setItem(PROJECT_NAME_KEY, newName);
     localStorage.removeItem(AUTO_SAVE_KEY);
     setSaveStatus("unsaved");
   }, [pushSnapshot, setNodes, setEdges]);
@@ -210,14 +214,14 @@ function FlowCanvasInner() {
     setEdges(template.edges);
     const name = `${template.label} Template`;
     setProjectName(name);
-    localStorage.setItem("meetingflow-project-name", name);
+    localStorage.setItem(PROJECT_NAME_KEY, name);
     setSaveStatus("unsaved");
     setTimeout(() => fitView({ padding: 0.15, duration: 400 }), 50);
   }, [pushSnapshot, setNodes, setEdges, fitView]);
 
   const handleProjectNameChange = useCallback((name: string) => {
     setProjectName(name);
-    localStorage.setItem("meetingflow-project-name", name);
+    localStorage.setItem(PROJECT_NAME_KEY, name);
     setSaveStatus("unsaved");
   }, []);
 
@@ -258,7 +262,7 @@ function FlowCanvasInner() {
       setNodes(sanitized);
       setEdges(savedEdges ?? []);
       setProjectName(session.name);
-      localStorage.setItem("meetingflow-project-name", session.name);
+      localStorage.setItem(PROJECT_NAME_KEY, session.name);
       setSaveStatus("saved");
       if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
       saveStatusTimer.current = setTimeout(() => setSaveStatus("unsaved"), 3000);
@@ -280,7 +284,7 @@ function FlowCanvasInner() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `meetingflow-${Date.now()}.json`;
+    a.download = `flowstate-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }, [nodes, edges]);

@@ -95,7 +95,7 @@ export function buildContextPrompt(
   }
 
   if (connected.length === 0) {
-    return `You are a strategic advisor and meeting facilitator.\n\nTask: ${userPrompt}`;
+    return `You are a strategic advisor helping synthesize a visual workflow.\n\nTask: ${userPrompt}`;
   }
 
   const contextLines = connected
@@ -107,7 +107,7 @@ export function buildContextPrompt(
     ? `\n\nNode relationships:\n${relationshipLines.join("\n")}`
     : "";
 
-  return `You are a strategic advisor and meeting facilitator.
+  return `You are a strategic advisor helping synthesize a visual workflow.
 
 Context from the canvas:
 ${contextLines}${relationshipSection}
@@ -126,7 +126,7 @@ export function buildAnalysisPrompt(selectedNodes: RawNode[]): string {
     .filter(Boolean)
     .join("\n");
 
-  return `You are a strategic advisor and meeting facilitator.
+  return `You are a strategic advisor helping synthesize a visual workflow.
 
 The user has selected the following nodes from their canvas:
 ${nodeDescriptions || "(nodes have no content yet)"}

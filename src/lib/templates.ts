@@ -38,9 +38,9 @@ export const TEMPLATES: Template[] = [
     ],
   },
   {
-    id: "meeting",
-    label: "Meeting",
-    description: "Structure a meeting with agenda, discussion, action items, and AI summary",
+    id: "session",
+    label: "Session",
+    description: "Agenda, discussion threads, action items, and an AI summary node",
     icon: "📅",
     nodes: [
       { id: "m-agenda",  type: "ideaNode",      position: { x: 60,  y: 80  }, style: { width: 220, height: 160 }, data: { label: "Agenda", content: "" } },
@@ -48,7 +48,7 @@ export const TEMPLATES: Template[] = [
       { id: "m-disc2",   type: "commentNode",   position: { x: 340, y: 230 }, style: { width: 220, height: 160 }, data: { label: "Discussion Point 2", content: "" } },
       { id: "m-action1", type: "actionItemNode", position: { x: 620, y: 40  }, style: { width: 220, height: 200 }, data: { label: "Action Item", content: "", assignee: "" } },
       { id: "m-action2", type: "actionItemNode", position: { x: 620, y: 270 }, style: { width: 220, height: 200 }, data: { label: "Action Item", content: "", assignee: "" } },
-      { id: "m-ai",      type: "aiNode",         position: { x: 900, y: 140 }, style: { width: 240, height: 260 }, data: { label: "Ask Gemini", prompt: "Summarize this meeting, list key decisions made, and suggest follow-up action items.", output: "", isGenerating: false } },
+      { id: "m-ai",      type: "aiNode",         position: { x: 900, y: 140 }, style: { width: 240, height: 260 }, data: { label: "Ask Gemini", prompt: "Summarize this session: key decisions and suggested follow-up action items.", output: "", isGenerating: false } },
     ],
     edges: [
       { id: "me-1", source: "m-agenda",  target: "m-disc1",   style: edgeStyle },

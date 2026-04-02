@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MeetingFlow | Meeting Notes & Ideas",
-  description: "A visual meeting organizer for capturing ideas and notes in real time",
+  title: "Flowstate | Creative Workflow Canvas",
+  description: "A visual workflow canvas for ideas, decisions, and AI-assisted thinking",
 };
 
 export default function RootLayout({

@@ -6,7 +6,7 @@ const NODE_GROUPS = [
   {
     label: "Capture",
     nodes: [
-      { type: "ideaNode",        label: "Idea",        description: "Capture a meeting idea",          accent: "border-l-blue-600"  },
+      { type: "ideaNode",        label: "Idea",        description: "Capture an idea on the canvas",   accent: "border-l-blue-600"  },
       { type: "commentNode",     label: "Comment",     description: "Clarify or annotate an idea",     accent: "border-l-blue-400"  },
       { type: "stakeholderNode", label: "Stakeholder", description: "Map people and their interests",  accent: "border-l-blue-500"  },
       { type: "summaryNode",     label: "Summary",     description: "AI-generated or manual summary",  accent: "border-l-blue-300"  },
@@ -38,7 +38,7 @@ const NODE_GROUPS = [
   {
     label: "AI",
     nodes: [
-      { type: "aiNode", label: "Ask Gemini", description: "Get AI help mid-meeting", accent: "border-l-violet-600" },
+      { type: "aiNode", label: "Ask Gemini", description: "AI assist using connected nodes", accent: "border-l-violet-600" },
     ],
   },
 ] as const;
